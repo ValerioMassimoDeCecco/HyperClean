@@ -1,0 +1,6 @@
+{
+  "summary":  "Piano di implementazione completo per HyperClean Dupes: motore di scansione ultra-rapido con hashing progressivo a blocchi (1KB -> 4KB -> 4KB...), selezione intelligente dell'originale e consulente AI ad alto ragionamento (Gemini 4 Argon con ThinkingLevel.HIGH).",
+  "updatedAt":  "2026-10-31T12:05:38.479705728Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

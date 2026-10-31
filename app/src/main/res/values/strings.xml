@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">HyperClean</string>
+    <string name="nav_scanner">Scanner 1KB/4KB</string>
+    <string name="nav_duplicates">Duplicati</string>
+    <string name="nav_history">Storico &amp; Cache</string>
+
+    <string name="hero_title">Motore Progressivo 1KB &#8594; 4KB</string>
+    <string name="hero_subtitle">Scansione ultra-rapida a blocchi incrementali con uscita anticipata al primo byte differente</string>
+
+    <string name="action_start_scan">Avvia Scansione Ultra-Veloce</string>
+    <string name="action_rescan">Riesegui Scansione</string>
+    <string name="action_cancel_scan">Interrompi</string>
+    <string name="action_add_folder">Aggiungi Cartella</string>
+    <string name="action_delete_selected">Elimina Copie Selezionate</string>
+    <string name="action_clear_hash_cache">Svuota Cache Hash</string>
+
+    <string name="badge_original_protected">ORIGINALE PROTETTO</string>
+    <string name="badge_duplicate_selected">COPIA DA ELIMINARE</string>
+
+    <string name="empty_duplicates_title">Nessun file duplicato rilevato</string>
+    <string name="empty_duplicates_subtitle">Aggiungi una cartella del telefono o avvia una scansione dallo Scanner 1KB/4KB.</string>
+</resources>

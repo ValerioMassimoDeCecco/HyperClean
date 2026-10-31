@@ -1,0 +1,6 @@
+{
+  "name": "HyperClean",
+  "description": "Eliminatore ultra-veloce di file duplicati con algoritmo progressivo 1KB/4KB a blocchi incrementali.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
