@@ -81,12 +81,19 @@ jobs:
             --stacktrace \
             -Pandroid.injected.signing.store.file="$KEYSTORE_PATH"
 
-      - name: Collect APK
+      - name: Collect and verify APK
         run: |
+          VERSION_NAME=$(grep -m1 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "versionName=$VERSION_NAME" >> "$GITHUB_ENV"
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "APK found: $APK"
           mkdir -p dist
-          find app/build/outputs/apk -name "*.apk" -print
-          cp $(find app/build/outputs/apk/release -name "*.apk" | head -n 1) "dist/HyperClean-${{ github.run_number }}.apk"
+          cp "$APK" "dist/HyperClean-v$VERSION_NAME.apk"
           ls -lh dist
+
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort -V | tail -n 1)
+          echo "apksigner: $APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "dist/HyperClean-v$VERSION_NAME.apk"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -114,10 +121,14 @@ jobs:
           tag_name: ${{ steps.tag.outputs.name }}
           name: "HyperClean ${{ steps.tag.outputs.name }}"
           body: |
-            APK release firmato, generato automaticamente da GitHub Actions.
+            APK release firmato e verificato con `apksigner`, generato da GitHub Actions.
 
-            Motore di deduplicazione: dimensione esatta → identità fisica (hardlink)
-            → sonda SHA-256 3 × 4 KB → conferma byte-per-byte.
+            **Motore di deduplicazione esatto**
+            1. dimensione esatta (zero I/O)
+            2. identità fisica via `st_dev`/`st_ino`: hardlink esclusi
+            3. cache di firme SHA-256 del contenuto
+            4. sonda SHA-256 su testa, centro e coda (3 × 4 KB)
+            5. conferma byte-per-byte: nessun falso positivo possibile
           files: dist/*.apk
           fail_on_unmatched_files: true
           draft: false
