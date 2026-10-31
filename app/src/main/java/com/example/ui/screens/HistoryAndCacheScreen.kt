@@ -248,15 +248,27 @@ fun HistoryAndCacheScreen(
                 )
                 Hairline(color = PaperTint)
                 LedgerRow(
-                    label = "Blocchi da 1 KB verificati",
-                    value = "${telemetry.oneKbChecksPerformed}",
+                    label = "Sonde SHA-256 da 3 × 4 KB",
+                    value = "${telemetry.probeSignaturesChecked}",
                     valueColor = Ink
                 )
                 Hairline(color = PaperTint)
                 LedgerRow(
-                    label = "Blocchi da 4 KB verificati",
-                    value = "${telemetry.fourKbChunksReadCount}",
+                    label = "File confrontati byte-per-byte",
+                    value = "${telemetry.byteCompareVerifiedFiles}",
                     valueColor = Ink
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Hardlink esclusi dalle copie",
+                    value = "${telemetry.hardlinkSetsExcluded}",
+                    valueColor = Ink
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Collisioni di sonda respinte",
+                    value = "${telemetry.rejectedProbeCollisions}",
+                    valueColor = ProtectedGreen
                 )
             }
         }

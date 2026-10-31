@@ -596,15 +596,13 @@ private fun AlgorithmFunnelCard(telemetry: ScanTelemetry) {
     } else {
         1f
     }
-    val stage2Ratio = if (telemetry.fourKbChunksReadCount > 0) {
-        1f - telemetry.fourKbEliminatedFiles.toFloat() / telemetry.fourKbChunksReadCount
-    } else {
-        1f
-    }
+    val stage2Ratio = if (telemetry.probeMatchesCount > 0) {
+        telemetry.byteCompareVerifiedFiles.toFloat() / telemetry.probeMatchesCount
+    } else if (telemetry.byteCompareVerifiedFiles > 0) 1f else 0f
 
     HyperCard(contentPadding = PaddingValues(18.dp)) {
         SectionHeading(
-            title = "Catena di filtraggio",
+            title = "Catena di verifica",
             trailing = {
                 PillTag(
                     text = "${telemetry.ioSavedPercent}% I/O risparmiato",
@@ -619,7 +617,7 @@ private fun AlgorithmFunnelCard(telemetry: ScanTelemetry) {
         FunnelStage(
             index = "00",
             title = "Dimensione esatta",
-            detail = "${telemetry.sizeEliminatedFiles} scartati · zero byte letti",
+            detail = "${telemetry.sizeEliminatedFiles} file scartati · zero byte letti",
             value = "${telemetry.sizeMatchedCandidates}",
             ratio = stage0Ratio,
             accent = VioletNote
@@ -627,18 +625,29 @@ private fun AlgorithmFunnelCard(telemetry: ScanTelemetry) {
         Spacer(modifier = Modifier.height(14.dp))
         FunnelStage(
             index = "01",
-            title = "Testata 1 KB",
-            detail = "${telemetry.oneKbChecksPerformed} hash · ${telemetry.oneKbEliminatedFiles} divergenti",
-            value = "${telemetry.oneKbChecksPerformed - telemetry.oneKbEliminatedFiles}",
-            ratio = stage1Ratio,
+            title = "Identità fisica",
+            detail = "${telemetry.hardlinkSetsExcluded} set di hardlink esclusi · zero byte letti",
+            value = "${telemetry.hardlinkSetsExcluded}",
+            ratio = if (telemetry.sizeMatchedCandidates > 0) {
+                1f - telemetry.hardlinkSetsExcluded.toFloat() / telemetry.sizeMatchedCandidates
+            } else 1f,
             accent = Ink
         )
         Spacer(modifier = Modifier.height(14.dp))
         FunnelStage(
             index = "02",
-            title = "Catena 4 KB",
-            detail = "${telemetry.fourKbChunksReadCount} blocchi · profondità ${telemetry.maxFourKbDepthReached}",
-            value = "${telemetry.totalFilesDiscovered - telemetry.fourKbEliminatedFiles}",
+            title = "Sonda SHA-256 3 × 4 KB",
+            detail = "${telemetry.oneKbEliminatedFiles} scartati in 12 KB per file",
+            value = "${telemetry.probeSignaturesChecked}",
+            ratio = stage1Ratio,
+            accent = Ink
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        FunnelStage(
+            index = "03",
+            title = "Conferma byte-per-byte",
+            detail = "${telemetry.rejectedProbeCollisions} collisioni di sonda respinte",
+            value = "${telemetry.byteCompareVerifiedFiles}",
             ratio = stage2Ratio,
             accent = ProtectedGreen
         )
@@ -656,7 +665,7 @@ private fun AlgorithmFunnelCard(telemetry: ScanTelemetry) {
             )
             Spacer(modifier = Modifier.width(7.dp))
             Text(
-                text = "Il confronto si interrompe al primo blocco differente: nessun file viene letto per intero se non è un duplicato reale.",
+                text = "Nessun file è dichiarato duplicato sulla base di un hash: il verdetto arriva solo dopo il confronto integrale del contenuto.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = InkMuted
             )
@@ -762,9 +771,12 @@ private fun FeedRow(line: VerboseFeedLine) {
         VerboseEventType.SIZE_FILTER -> VioletSoft to VioletNote
         VerboseEventType.ONE_KB_HASH -> SignalLimeSoft to Ink
         VerboseEventType.FOUR_KB_STEP -> PaperTint to InkMuted
+        VerboseEventType.PROBE -> SignalLimeSoft to Ink
         VerboseEventType.EARLY_EXIT_SAVED -> ProtectedSoft to ProtectedGreen
         VerboseEventType.DUPLICATE_JACKPOT -> SignalLime to Ink
         VerboseEventType.CACHE_TURBO -> VioletSoft to VioletNote
+        VerboseEventType.LINK -> PaperTint to VioletNote
+        VerboseEventType.CONFIRM -> SignalLime to Ink
         VerboseEventType.INFO -> PaperTint to InkMuted
     }
 

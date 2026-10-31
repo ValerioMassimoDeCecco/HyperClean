@@ -4,8 +4,8 @@
     <string name="nav_duplicates">Duplicati</string>
     <string name="nav_history">Archivio</string>
 
-    <string name="hero_title">Motore progressivo 1 KB → 4 KB</string>
-    <string name="hero_subtitle">Scansione a blocchi incrementali con uscita anticipata al primo byte differente</string>
+    <string name="hero_title">Motore esatto a conferma byte-per-byte</string>
+    <string name="hero_subtitle">Dimensione, identità fisica, sonda da 12 KB e confronto integrale: solo duplicati reali</string>
 
     <string name="action_start_scan">Avvia scansione</string>
     <string name="action_rescan">Ripeti scansione</string>

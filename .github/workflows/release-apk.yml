@@ -1,0 +1,113 @@
+name: Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag della release (vuoto = apk-build-<run number>)"
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platforms and build tools
+        run: |
+          sdkmanager --list_installed || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" || \
+            sdkmanager "platform-tools" "platforms;android-36"
+          sdkmanager "platforms;android-36.1" || true
+          sdkmanager --list_installed || true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Create CI signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/ci-upload-key.jks" \
+            -alias upload \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass hyperclean-ci -keypass hyperclean-ci \
+            -dname "CN=HyperClean CI, OU=Build, O=HyperClean, L=Spoleto, C=IT"
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/ci-upload-key.jks
+          STORE_PASSWORD: hyperclean-ci
+          KEY_PASSWORD: hyperclean-ci
+        run: |
+          gradle :app:assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH"
+
+      - name: Collect APK
+        run: |
+          mkdir -p dist
+          find app/build/outputs/apk -name "*.apk" -print
+          cp $(find app/build/outputs/apk/release -name "*.apk" | head -n 1) "dist/HyperClean-${{ github.run_number }}.apk"
+          ls -lh dist
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyperclean-release-apk
+          path: dist/*.apk
+          if-no-files-found: error
+
+      - name: Resolve release tag
+        id: tag
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            echo "name=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=apk-build-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub release
+        if: steps.tag.outputs.name != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: "HyperClean ${{ steps.tag.outputs.name }}"
+          body: |
+            APK release firmato, generato automaticamente da GitHub Actions.
+
+            Motore di deduplicazione: dimensione esatta → identità fisica (hardlink)
+            → sonda SHA-256 3 × 4 KB → conferma byte-per-byte.
+          files: dist/*.apk
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
