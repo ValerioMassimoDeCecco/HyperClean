@@ -3,12 +3,15 @@ package com.example
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,36 +20,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Radar
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.outlined.CopyAll
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Radar
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,20 +54,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.DuplicateCleanerViewModel
+import com.example.ui.components.MonoLabel
+import com.example.ui.components.StatusDot
 import com.example.ui.screens.DuplicatesReviewScreen
 import com.example.ui.screens.HistoryAndCacheScreen
-import com.example.ui.screens.RadarScannerScreen
-import com.example.ui.theme.ElevatedCardSurface
+import com.example.ui.screens.ScannerScreen
+import com.example.ui.theme.AlertCoral
+import com.example.ui.theme.ConsoleMuted
+import com.example.ui.theme.Hairline
+import com.example.ui.theme.HyperTypography
+import com.example.ui.theme.Ink
+import com.example.ui.theme.InkMuted
 import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.NeonCyanPrimary
+import com.example.ui.theme.PaperCanvas
+import com.example.ui.theme.PaperSurface
+import com.example.ui.theme.SignalLime
+import com.example.ui.theme.VioletNote
 
 enum class HyperCleanTab(
     val routeId: String,
@@ -86,7 +96,16 @@ enum class HyperCleanTab(
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
         setContent {
             MyApplicationTheme {
                 HyperCleanApp()
@@ -95,7 +114,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HyperCleanApp(
     viewModel: DuplicateCleanerViewModel = viewModel(factory = DuplicateCleanerViewModel.Factory)
@@ -125,7 +143,7 @@ fun HyperCleanApp(
                 )
             } catch (_: Exception) {
             }
-            val folderLabel = treeUri.lastPathSegment?.substringAfterLast(':') ?: "Cartella Dispositivo"
+            val folderLabel = treeUri.lastPathSegment?.substringAfterLast(':') ?: "Cartella dispositivo"
             viewModel.addSafFolder(treeUri, folderLabel)
         }
     }
@@ -139,158 +157,227 @@ fun HyperCleanApp(
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(NeonCyanPrimary.copy(alpha = 0.16f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Bolt,
-                                contentDescription = null,
-                                tint = NeonCyanPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text(
-                                text = "Motore Progressivo 1 KB → 4 KB",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = NeonCyanPrimary
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    Surface(
-                        color = ElevatedCardSurface,
-                        shape = RoundedCornerShape(50),
-                        modifier = Modifier.padding(end = 12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Speed,
-                                contentDescription = null,
-                                tint = NeonCyanPrimary,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Text(
-                                text = "1KB + 4KB ENGINE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = NeonCyanPrimary
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
-            ) {
-                HyperCleanTab.entries.forEach { tab ->
-                    val selected = currentTab == tab
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { currentTab = tab },
-                        modifier = Modifier.testTag("nav_tab_${tab.routeId}"),
-                        icon = {
-                            if (tab == HyperCleanTab.DUPLICATES && uiState.totalSelectedFilesCount > 0) {
-                                BadgedBox(
-                                    badge = {
-                                        Badge(containerColor = NeonCyanPrimary) {
-                                            Text("${uiState.totalSelectedFilesCount}")
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                        contentDescription = stringResource(tab.labelResId)
-                                    )
-                                }
-                            } else {
-                                Icon(
-                                    imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                    contentDescription = stringResource(tab.labelResId)
-                                )
-                            }
-                        },
-                        label = {
-                            Text(
-                                text = stringResource(tab.labelResId),
-                                maxLines = 1
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = NeonCyanPrimary,
-                            selectedTextColor = NeonCyanPrimary,
-                            indicatorColor = NeonCyanPrimary.copy(alpha = 0.16f)
-                        )
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
+        containerColor = PaperCanvas,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter
+                .background(PaperCanvas)
         ) {
-            Box(modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
-                when (currentTab) {
-                    HyperCleanTab.SCANNER -> RadarScannerScreen(
-                        uiState = uiState,
-                        cachedSignaturesCount = cachedCount,
-                        totalBytesFreedAllTime = totalBytesFreedAllTime,
-                        linkedFolders = linkedFolders,
-                        onStartScan = { viewModel.startUltraFastScan() },
-                        onCancelScan = { viewModel.cancelScan() },
-                        onAddSafFolderClick = { folderPickerLauncher.launch(null) },
-                        onRemoveSafFolder = { uri -> viewModel.removeSafFolder(uri) },
-                        onNavigateToDuplicates = { currentTab = HyperCleanTab.DUPLICATES }
-                    )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+            ) {
+                BrandHeader(
+                    isScanning = uiState.isScanning,
+                    phasesLabel = if (uiState.isScanning) "live" else "idle"
+                )
 
-                    HyperCleanTab.DUPLICATES -> DuplicatesReviewScreen(
-                        uiState = uiState,
-                        onSelectCategory = { viewModel.setCategoryFilter(it) },
-                        onSelectRule = { viewModel.applySelectionRule(it) },
-                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                        onToggleFileSelection = { groupId, fileId ->
-                            viewModel.toggleFileSelection(groupId, fileId)
-                        },
-                        onConfirmDeleteSelected = { viewModel.deleteSelectedDuplicates() },
-                        onAddSafFolderClick = { folderPickerLauncher.launch(null) }
-                    )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = 720.dp)
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                    ) {
+                        when (currentTab) {
+                            HyperCleanTab.SCANNER -> ScannerScreen(
+                                uiState = uiState,
+                                cachedSignaturesCount = cachedCount,
+                                totalBytesFreedAllTime = totalBytesFreedAllTime,
+                                linkedFolders = linkedFolders,
+                                onStartScan = { viewModel.startUltraFastScan() },
+                                onCancelScan = { viewModel.cancelScan() },
+                                onAddSafFolderClick = { folderPickerLauncher.launch(null) },
+                                onRemoveSafFolder = { uri -> viewModel.removeSafFolder(uri) },
+                                onNavigateToDuplicates = {
+                                    currentTab = HyperCleanTab.DUPLICATES
+                                }
+                            )
 
-                    HyperCleanTab.HISTORY -> HistoryAndCacheScreen(
-                        telemetry = uiState.telemetry,
-                        cachedSignaturesCount = cachedCount,
-                        cleanupHistory = cleanupHistory,
-                        onClearHashCache = { viewModel.clearHashCache() }
+                            HyperCleanTab.DUPLICATES -> DuplicatesReviewScreen(
+                                uiState = uiState,
+                                onSelectCategory = { viewModel.setCategoryFilter(it) },
+                                onSelectRule = { viewModel.applySelectionRule(it) },
+                                onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                                onToggleFileSelection = { groupId, fileId ->
+                                    viewModel.toggleFileSelection(groupId, fileId)
+                                },
+                                onConfirmDeleteSelected = { viewModel.deleteSelectedDuplicates() },
+                                onAddSafFolderClick = { folderPickerLauncher.launch(null) }
+                            )
+
+                            HyperCleanTab.HISTORY -> HistoryAndCacheScreen(
+                                telemetry = uiState.telemetry,
+                                cachedSignaturesCount = cachedCount,
+                                cleanupHistory = cleanupHistory,
+                                onClearHashCache = { viewModel.clearHashCache() }
+                            )
+                        }
+                    }
+                }
+            }
+
+            DockNavigation(
+                currentTab = currentTab,
+                selectedCount = uiState.totalSelectedFilesCount,
+                onSelect = { currentTab = it },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 14.dp)
+            )
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 104.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = Ink,
+                    contentColor = PaperCanvas,
+                    actionContentColor = SignalLime,
+                    dismissActionContentColor = ConsoleMuted
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BrandHeader(
+    isScanning: Boolean,
+    phasesLabel: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(Ink),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "HC",
+                style = HyperTypography.titleLarge,
+                color = SignalLime
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleLarge,
+                color = Ink
+            )
+            MonoLabel(
+                text = "Deduplicatore · 1 KB → 4 KB",
+                color = InkMuted
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .clip(CircleShape)
+                .border(1.dp, Hairline, CircleShape)
+                .background(PaperSurface)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusDot(color = if (isScanning) SignalLime else InkMuted, size = 6)
+            Spacer(modifier = Modifier.width(6.dp))
+            MonoLabel(
+                text = phasesLabel,
+                color = if (isScanning) VioletNote else InkMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun DockNavigation(
+    currentTab: HyperCleanTab,
+    selectedCount: Int,
+    onSelect: (HyperCleanTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .shadow(
+                elevation = 20.dp,
+                shape = CircleShape,
+                clip = false,
+                ambientColor = Ink.copy(alpha = 0.16f),
+                spotColor = Ink.copy(alpha = 0.16f)
+            ),
+        shape = CircleShape,
+        color = PaperSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
+    ) {
+        Row(
+            modifier = Modifier.padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HyperCleanTab.entries.forEach { tab ->
+                val selected = currentTab == tab
+                Row(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (selected) Ink else Color.Transparent)
+                        .clickable { onSelect(tab) }
+                        .padding(horizontal = if (selected) 16.dp else 14.dp, vertical = 11.dp)
+                        .testTag("nav_tab_${tab.routeId}"),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                        contentDescription = stringResource(tab.labelResId),
+                        tint = if (selected) SignalLime else InkMuted,
+                        modifier = Modifier.size(19.dp)
                     )
+                    if (selected) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(tab.labelResId),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = PaperCanvas,
+                            maxLines = 1
+                        )
+                    }
+                    if (tab == HyperCleanTab.DUPLICATES && selectedCount > 0) {
+                        Spacer(modifier = Modifier.width(7.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(AlertCoral)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "$selectedCount",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }

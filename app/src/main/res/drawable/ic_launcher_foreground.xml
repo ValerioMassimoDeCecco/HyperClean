@@ -4,16 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Back duplicate card -->
+    <!-- Rear sheet: the duplicate copy, faded paper -->
     <path
-        android:fillColor="#6366F1"
-        android:pathData="M38,26 L68,26 C71.3,26 74,28.7 74,32 L74,64 C74,67.3 71.3,70 68,70 L38,70 C34.7,70 32,67.3 32,64 L32,32 C32,28.7 34.7,26 38,26 Z" />
-    <!-- Front primary card with lightning cutout symbol -->
+        android:fillColor="#4DF3EFE6"
+        android:pathData="M36,26 L68,26 C71.3,26 74,28.7 74,32 L74,64 C74,67.3 71.3,70 68,70 L36,70 C32.7,70 30,67.3 30,64 L30,32 C30,28.7 32.7,26 36,26 Z" />
+    <!-- Front sheet: the protected original, signal lime -->
     <path
-        android:fillColor="#00F5D4"
-        android:pathData="M42,36 L72,36 C75.3,36 78,38.7 78,42 L78,74 C78,77.3 75.3,80 72,80 L42,80 C38.7,80 36,77.3 36,74 L36,42 C36,38.7 38.7,36 42,36 Z" />
-    <!-- Lightning bolt inside front card representing high-speed 1KB/4KB hashing -->
+        android:fillColor="#CBF25C"
+        android:pathData="M42,38 L74,38 C77.3,38 80,40.7 80,44 L80,76 C80,79.3 77.3,82 74,82 L42,82 C38.7,82 36,79.3 36,76 L36,44 C36,40.7 38.7,38 42,38 Z" />
+    <!-- Verified original check mark -->
     <path
-        android:fillColor="#0B0F17"
-        android:pathData="M59,43 L47,59 L55,59 L53,73 L66,56 L58,56 Z" />
+        android:pathData="M48,60 L55.5,67.5 L69,52"
+        android:strokeColor="#14160F"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
 </vector>
