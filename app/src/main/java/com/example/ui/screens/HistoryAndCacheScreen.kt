@@ -1,8 +1,8 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,17 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -32,14 +28,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.CleanupHistoryEntity
 import com.example.domain.model.ByteFormatter
 import com.example.domain.model.ScanTelemetry
-import com.example.ui.theme.ElevatedCardSurface
-import com.example.ui.theme.EmeraldSafe
-import com.example.ui.theme.NeonCyanPrimary
+import com.example.ui.components.Hairline
+import com.example.ui.components.HyperCard
+import com.example.ui.components.IndexBadge
+import com.example.ui.components.LedgerRow
+import com.example.ui.components.MonoLabel
+import com.example.ui.components.OutlinePillButton
+import com.example.ui.components.PillTag
+import com.example.ui.components.SectionHeading
+import com.example.ui.theme.Ink
+import com.example.ui.theme.InkFaint
+import com.example.ui.theme.InkMuted
+import com.example.ui.theme.PaperSunken
+import com.example.ui.theme.PaperTint
+import com.example.ui.theme.ProtectedGreen
+import com.example.ui.theme.ProtectedSoft
+import com.example.ui.theme.VioletNote
+import com.example.ui.theme.VioletSoft
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,218 +61,301 @@ fun HistoryAndCacheScreen(
     onClearHashCache: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember {
-        SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ITALIAN)
-    }
+    val dateFormat = remember { SimpleDateFormat("dd MMM · HH:mm", Locale.ITALIAN) }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .testTag("history_and_cache_screen"),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 132.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Local 1KB/4KB Hash Cache Management Card
         item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, NeonCyanPrimary.copy(alpha = 0.4f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = ElevatedCardSurface)
+            HyperCard(
+                shape = RoundedCornerShape(28.dp),
+                contentPadding = PaddingValues(20.dp),
+                elevation = 10
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Memory,
-                            contentDescription = null,
-                            tint = NeonCyanPrimary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "CACHE HASH LOCALE 1 KB → 4 KB",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = NeonCyanPrimary
-                        )
-                    }
+                    MonoLabel(text = "Archivio interventi", color = InkMuted)
+                    PillTag(
+                        text = "${cleanupHistory.size} sessioni",
+                        background = PaperTint,
+                        foreground = Ink
+                    )
+                }
 
+                Spacer(modifier = Modifier.height(20.dp))
+                MonoLabel(text = "Spazio liberato in totale", color = InkMuted)
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(verticalAlignment = Alignment.Bottom) {
+                    val formatted = ByteFormatter.formatBytes(
+                        cleanupHistory.sumOf { it.bytesFreed }
+                    )
                     Text(
-                        text = "$cachedSignaturesCount Firme Memorizzate",
+                        text = formatted.substringBefore(' '),
+                        style = MaterialTheme.typography.displayLarge,
+                        color = Ink
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = formatted.substringAfter(' ', ""),
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = InkFaint,
+                        modifier = Modifier.padding(bottom = 7.dp)
                     )
+                }
 
-                    Text(
-                        text = "Le firme dei blocchi da 1 KB e 4 KB vengono salvate nel database locale del telefono per evitare di rileggere i file non modificati durante le scansioni successive.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = if (cleanupHistory.isEmpty()) {
+                        "Ogni pulizia completata viene annotata qui con byte liberati, durata e I/O risparmiato."
+                    } else {
+                        "${cleanupHistory.sumOf { it.filesDeletedCount }} copie rimosse in ${cleanupHistory.size} interventi registrati sul dispositivo."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkMuted
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+                Hairline()
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MiniStat(
+                        label = "Ultima durata",
+                        value = "${telemetry.elapsedTimeMs} ms",
+                        modifier = Modifier.weight(1f)
                     )
-
-                    OutlinedButton(
-                        onClick = onClearHashCache,
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("clear_hash_cache_button"),
-                        shape = RoundedCornerShape(12.dp)
+                            .width(1.dp)
+                            .height(36.dp)
+                            .background(PaperSunken)
+                    )
+                    MiniStat(
+                        label = "I/O risparmiato",
+                        value = "${telemetry.ioSavedPercent}%",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(36.dp)
+                            .background(PaperSunken)
+                    )
+                    MiniStat(
+                        label = "File analizzati",
+                        value = "${telemetry.totalFilesDiscovered}",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        item { SectionHeading(title = "Cache firme") }
+
+        item {
+            HyperCard(contentPadding = PaddingValues(18.dp), elevation = 4) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(VioletSoft),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Memory,
                             contentDescription = null,
-                            tint = NeonCyanPrimary,
-                            modifier = Modifier.size(18.dp)
+                            tint = VioletNote,
+                            modifier = Modifier.size(19.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Svuota Cache Hash ($cachedSignaturesCount)", color = NeonCyanPrimary)
                     }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Firme 1 KB / 4 KB",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Ink
+                        )
+                        Text(
+                            text = "Salvate localmente, mai inviate altrove",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = InkFaint
+                        )
+                    }
+                    Text(
+                        text = "$cachedSignaturesCount",
+                        style = MaterialTheme.typography.displayMedium,
+                        color = Ink
+                    )
                 }
-            }
-        }
 
-        // 2. Last Scan Technical Breakdown
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Gli hash già calcolati permettono alle scansioni successive di saltare la rilettura dei file non modificati.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkMuted
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                OutlinePillButton(
+                    text = "Svuota cache",
+                    icon = Icons.Default.Memory,
+                    onClick = onClearHashCache,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "TELEMETRIA DETTAGLIATA ULTIMA SCANSIONE",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = NeonCyanPrimary
-                    )
-                    TelemetryStatRow("Volume Totale File Scoperti", ByteFormatter.formatBytes(telemetry.totalBytesDiscovered))
-                    TelemetryStatRow("Volume Candidati Stessa Dimensione", ByteFormatter.formatBytes(telemetry.totalCandidateBytes))
-                    TelemetryStatRow("Byte Effettivamente Letti dal Disco", ByteFormatter.formatBytes(telemetry.actualBytesRead))
-                    TelemetryStatRow("I/O Risparmiato grazie a 1KB → 4KB", "${ByteFormatter.formatBytes(telemetry.bytesSavedByEarlyExit)} (${telemetry.ioSavedPercent}%)")
-                    TelemetryStatRow("Blocchi da 1 KB Verificati", "${telemetry.oneKbChecksPerformed} (scartati: ${telemetry.oneKbEliminatedFiles})")
-                    TelemetryStatRow("Blocchi da 4 KB Verificati", "${telemetry.fourKbChunksReadCount} (scartati: ${telemetry.fourKbEliminatedFiles})")
-                }
+                        .testTag("clear_hash_cache_button")
+                )
             }
         }
 
-        // 3. Cleanup History Section
+        item { SectionHeading(title = "Ultima scansione") }
+
         item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    tint = NeonCyanPrimary,
-                    modifier = Modifier.size(18.dp)
+            HyperCard(contentPadding = PaddingValues(18.dp), elevation = 4) {
+                LedgerRow(
+                    label = "Volume totale dei file scoperti",
+                    value = ByteFormatter.formatBytes(telemetry.totalBytesDiscovered)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "STORICO PULIZIE EFFETTUATE (${cleanupHistory.size})",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = NeonCyanPrimary
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Candidati con la stessa dimensione",
+                    value = ByteFormatter.formatBytes(telemetry.totalCandidateBytes)
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Byte realmente letti dal disco",
+                    value = ByteFormatter.formatBytes(telemetry.actualBytesRead)
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "I/O evitato dall'uscita anticipata",
+                    value = ByteFormatter.formatBytes(telemetry.bytesSavedByEarlyExit),
+                    valueColor = ProtectedGreen,
+                    emphasized = true
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Blocchi da 1 KB verificati",
+                    value = "${telemetry.oneKbChecksPerformed}",
+                    valueColor = Ink
+                )
+                Hairline(color = PaperTint)
+                LedgerRow(
+                    label = "Blocchi da 4 KB verificati",
+                    value = "${telemetry.fourKbChunksReadCount}",
+                    valueColor = Ink
                 )
             }
         }
+
+        item { SectionHeading(title = "Interventi registrati") }
 
         if (cleanupHistory.isEmpty()) {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
+                HyperCard(contentPadding = PaddingValues(18.dp), elevation = 3) {
                     Text(
-                        text = "Nessuna sessione di pulizia registrata. Elimina i duplicati trovati per salvare il report nello storico locale.",
+                        text = "Nessuna sessione di pulizia. Elimina le copie ridondanti dalla raccolta duplicati per popolare l'archivio.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp)
+                        color = InkFaint
                     )
                 }
             }
         } else {
-            items(
+            itemsIndexed(
                 items = cleanupHistory,
-                key = { it.id }
-            ) { record ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteSweep,
-                                contentDescription = null,
-                                tint = EmeraldSafe,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = record.summaryNote,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "${dateFormat.format(Date(record.timestamp))} • Scansione: ${record.scanDurationMs}ms (${record.ioSavedPercent}% I/O salvato)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Text(
-                            text = "+${ByteFormatter.formatBytes(record.bytesFreed)}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = EmeraldSafe
-                        )
-                    }
-                }
+                key = { _, record -> record.id }
+            ) { index, record ->
+                CleanupRecordRow(
+                    record = record,
+                    index = index,
+                    dateText = dateFormat.format(Date(record.timestamp))
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TelemetryStatRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(ElevatedCardSurface)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+private fun MiniStat(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        MonoLabel(text = label, color = InkMuted)
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
-            color = NeonCyanPrimary
+            style = MaterialTheme.typography.titleLarge,
+            color = Ink
         )
+    }
+}
+
+@Composable
+private fun CleanupRecordRow(
+    record: CleanupHistoryEntity,
+    index: Int,
+    dateText: String
+) {
+    HyperCard(
+        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(14.dp),
+        elevation = 4
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IndexBadge(
+                text = String.format(Locale.ITALIAN, "%02d", index + 1),
+                background = ProtectedSoft,
+                foreground = ProtectedGreen
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = record.summaryNote,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Ink,
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "$dateText · ${record.filesDeletedCount} file · ${record.ioSavedPercent}% I/O",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkFaint,
+                    maxLines = 1
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = null,
+                        tint = ProtectedGreen,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = ByteFormatter.formatBytes(record.bytesFreed),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ProtectedGreen
+                    )
+                }
+                MonoLabel(text = "liberati", color = InkFaint)
+            }
+        }
     }
 }

@@ -18,38 +18,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -72,14 +60,31 @@ import com.example.domain.model.FileCategory
 import com.example.domain.model.ScannedFileItem
 import com.example.domain.model.SelectionRule
 import com.example.ui.DuplicateCleanerUiState
-import com.example.ui.theme.CoralDanger
-import com.example.ui.theme.CoralDangerContainer
-import com.example.ui.theme.ElectricIndigoSecondary
-import com.example.ui.theme.ElevatedCardSurface
-import com.example.ui.theme.EmeraldSafe
-import com.example.ui.theme.EmeraldSafeContainer
-import com.example.ui.theme.NeonCyanPrimary
-import com.example.ui.theme.OutlineSubtle
+import com.example.ui.components.AccentBanner
+import com.example.ui.components.CoralTag
+import com.example.ui.components.Hairline
+import com.example.ui.components.HyperCard
+import com.example.ui.components.HyperSearchField
+import com.example.ui.components.IndexBadge
+import com.example.ui.components.InkButton
+import com.example.ui.components.MonoChip
+import com.example.ui.components.MonoLabel
+import com.example.ui.components.OutlinePillButton
+import com.example.ui.components.PaperCheck
+import com.example.ui.components.PillTag
+import com.example.ui.theme.AlertCoral
+import com.example.ui.theme.AlertCoralSoft
+import com.example.ui.theme.HairlineStrong
+import com.example.ui.theme.Ink
+import com.example.ui.theme.InkFaint
+import com.example.ui.theme.InkMuted
+import com.example.ui.theme.PaperSurface
+import com.example.ui.theme.PaperTint
+import com.example.ui.theme.ProtectedGreen
+import com.example.ui.theme.SignalLime
+import com.example.ui.theme.SignalLimeSoft
+import com.example.ui.theme.VioletNote
+import com.example.ui.theme.VioletSoft
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -95,530 +100,498 @@ fun DuplicatesReviewScreen(
     onAddSafFolderClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showRulePickerDialog by remember { mutableStateOf(false) }
-    var showConfirmDeleteDialog by remember { mutableStateOf(false) }
+    var showRuleDialog by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
     val filteredGroups = uiState.filteredGroups
+    val reclaimable = uiState.totalSelectedReclaimableBytes
+    val selectedCount = uiState.totalSelectedFilesCount
+    val totalFiles = uiState.duplicateGroups.sumOf { it.files.size }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .testTag("duplicates_review_screen")
     ) {
-        // Top Filter & Auto-Selection Rule Header
+        // Sticky summary: reclaimable space + the single destructive action
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 20.dp, vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("duplicates_search_input"),
-                    placeholder = { Text("Cerca per nome o cartella...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = NeonCyanPrimary)
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp)
+                MonoLabel(text = "Raccolta duplicati", color = InkMuted)
+                PillTag(
+                    text = "${uiState.duplicateGroups.size} gruppi",
+                    background = PaperTint,
+                    foreground = Ink
                 )
-
-                OutlinedButton(
-                    onClick = { showRulePickerDialog = true },
-                    modifier = Modifier
-                        .height(54.dp)
-                        .testTag("selection_rule_button"),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Criterio Selezione",
-                        tint = NeonCyanPrimary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Regola", color = NeonCyanPrimary)
-                }
             }
 
-            // Active Auto-Selection Rule Banner
-            Surface(
-                color = ElectricIndigoSecondary.copy(alpha = 0.14f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showRulePickerDialog = true }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = NeonCyanPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        val formatted = ByteFormatter.formatBytes(reclaimable)
                         Text(
-                            text = "Criterio attivo: ${uiState.selectionRule.titleIt}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = formatted.substringBefore(' '),
+                            style = MaterialTheme.typography.displayMedium,
+                            color = Ink
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = formatted.substringAfter(' ', ""),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = InkFaint,
+                            modifier = Modifier.padding(bottom = 5.dp)
                         )
                     }
                     Text(
-                        text = "Cambia",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = NeonCyanPrimary
+                        text = "$selectedCount copie da eliminare su ${totalFiles} rilevate",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = InkMuted
                     )
                 }
-            }
 
-            // Category Filter Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FileCategory.entries.forEach { category ->
-                    val isSelected = uiState.selectedCategory == category
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onSelectCategory(category) },
-                        label = { Text(category.labelIt) },
-                        modifier = Modifier.testTag("category_chip_${category.name.lowercase()}"),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = NeonCyanPrimary.copy(alpha = 0.22f),
-                            selectedLabelColor = NeonCyanPrimary
-                        )
-                    )
-                }
+                InkButton(
+                    text = if (selectedCount > 0) "Elimina" else "Nessuna",
+                    icon = Icons.Default.DeleteForever,
+                    containerColor = if (selectedCount > 0) AlertCoral else InkFaint,
+                    contentColor = Color.White,
+                    enabled = selectedCount > 0,
+                    onClick = { showConfirmDialog = true },
+                    modifier = Modifier.testTag("delete_selected_button")
+                )
             }
         }
 
-        // Duplicate Groups List
-        if (filteredGroups.isEmpty()) {
-            EmptyDuplicatesState(
-                onAddSafFolderClick = onAddSafFolderClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .testTag("duplicate_groups_list"),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(
-                    items = filteredGroups,
-                    key = { it.groupId }
-                ) { group ->
-                    DuplicateGroupCard(
-                        group = group,
-                        onToggleFile = { fileId ->
-                            onToggleFileSelection(group.groupId, fileId)
-                        }
-                    )
-                }
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .testTag("duplicate_groups_list"),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 132.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                HyperSearchField(
+                    value = uiState.searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("duplicates_search_input")
+                )
             }
-        }
 
-        // Bottom Sticky Action Bar for 1-Tap Safe Deletion
-        if (uiState.totalSelectedFilesCount > 0) {
-            Surface(
-                color = ElevatedCardSurface,
-                tonalElevation = 8.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, CoralDanger.copy(alpha = 0.4f), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-            ) {
+            item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${uiState.totalSelectedFilesCount} copie selezionate",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Liberi ${ByteFormatter.formatBytes(uiState.totalSelectedReclaimableBytes)} • Originali protetti",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = EmeraldSafe
+                    FileCategory.entries.forEach { category ->
+                        MonoChip(
+                            text = category.labelIt,
+                            selected = uiState.selectedCategory == category,
+                            onClick = { onSelectCategory(category) },
+                            modifier = Modifier.testTag("category_chip_${category.name.lowercase()}")
                         )
                     }
+                }
+            }
 
-                    Button(
-                        onClick = { showConfirmDeleteDialog = true },
+            item {
+                AccentBanner(
+                    title = "Criterio automatico",
+                    subtitle = uiState.selectionRule.titleIt,
+                    icon = Icons.Default.Tune,
+                    background = VioletSoft,
+                    accent = VioletNote,
+                    onClick = { showRuleDialog = true },
+                    modifier = Modifier.testTag("selection_rule_button")
+                )
+            }
+
+            if (filteredGroups.isEmpty()) {
+                item {
+                    EmptyDuplicatesState(
+                        onAddSafFolderClick = onAddSafFolderClick,
                         modifier = Modifier
-                            .height(50.dp)
-                            .testTag("delete_selected_duplicates_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CoralDanger,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.Default.DeleteForever, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Elimina Ora",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    items = filteredGroups,
+                    key = { _, group -> group.groupId }
+                ) { index, group ->
+                    DuplicateGroupCard(
+                        group = group,
+                        index = index,
+                        onToggleFileSelection = onToggleFileSelection
+                    )
                 }
             }
         }
     }
 
-    if (showRulePickerDialog) {
+    if (showRuleDialog) {
         SelectionRuleDialog(
             currentRule = uiState.selectionRule,
             onSelectRule = { rule ->
                 onSelectRule(rule)
-                showRulePickerDialog = false
+                showRuleDialog = false
             },
-            onDismiss = { showRulePickerDialog = false }
+            onDismiss = { showRuleDialog = false }
         )
     }
 
-    if (showConfirmDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmDeleteDialog = false },
-            title = {
-                Text("Conferma Eliminazione Duplicati")
+    if (showConfirmDialog) {
+        ConfirmDeleteDialog(
+            count = selectedCount,
+            bytes = reclaimable,
+            onConfirm = {
+                showConfirmDialog = false
+                onConfirmDeleteSelected()
             },
-            text = {
-                Text(
-                    "Stai per eliminare definitivamente ${uiState.totalSelectedFilesCount} copie ridondanti liberando " +
-                        "${ByteFormatter.formatBytes(uiState.totalSelectedReclaimableBytes)}.\n\n" +
-                        "Per ogni gruppo verrà mantenuto intatto il file originale protetto."
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showConfirmDeleteDialog = false
-                        onConfirmDeleteSelected()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CoralDanger,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.testTag("confirm_delete_dialog_button")
-                ) {
-                    Text("Elimina Definitivamente")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirmDeleteDialog = false }) {
-                    Text("Annulla")
-                }
-            }
+            onDismiss = { showConfirmDialog = false }
         )
     }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Group card                                                         */
+/* ------------------------------------------------------------------ */
 
 @Composable
 private fun DuplicateGroupCard(
     group: DuplicateGroup,
-    onToggleFile: (String) -> Unit
+    index: Int,
+    onToggleFileSelection: (String, String) -> Unit
 ) {
-    var showTechnicalDetails by remember { mutableStateOf(false) }
+    var expanded by remember(group.groupId) { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, OutlineSubtle, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    HyperCard(
+        shape = RoundedCornerShape(22.dp),
+        contentPadding = PaddingValues(16.dp),
+        elevation = 5
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Group Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(NeonCyanPrimary.copy(alpha = 0.14f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = categoryIcon(group.category),
-                            contentDescription = null,
-                            tint = NeonCyanPrimary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "${group.files.size} File Identici • ${ByteFormatter.formatBytes(group.fileSizeBytes)} cad.",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Hash 1KB+${group.fourKbBlocksChecked}×4KB: #${group.signatureHex.uppercase(Locale.ROOT)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = NeonCyanPrimary
-                        )
-                    }
-                }
-
-                Surface(
-                    color = CoralDangerContainer,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "-${ByteFormatter.formatBytes(group.reclaimableBytes)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFFFECDD3),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IndexBadge(text = String.format(Locale.ITALIAN, "%02d", index + 1))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${group.files.size} copie identiche",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Ink
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = categoryIcon(group.category),
+                        contentDescription = null,
+                        tint = InkMuted,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    MonoLabel(
+                        text = "${ByteFormatter.formatBytes(group.fileSizeBytes)} · ${group.category.labelIt}",
+                        color = InkMuted
                     )
                 }
             }
-
-            // Individual files inside the duplicate cluster
-            group.files.forEach { fileItem ->
-                DuplicateFileItemRow(
-                    fileItem = fileItem,
-                    onToggle = { onToggleFile(fileItem.id) }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "+${ByteFormatter.formatBytes(group.reclaimableBytes)}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = ProtectedGreen
                 )
+                MonoLabel(text = "recuperabili", color = InkFaint)
             }
+        }
 
-            // Expandable 1KB/4KB Verification & Smart Verdict Footer
-            Row(
+        Spacer(modifier = Modifier.height(14.dp))
+        Hairline()
+        Spacer(modifier = Modifier.height(4.dp))
+
+        group.files.forEachIndexed { fileIndex, file ->
+            DuplicateFileRow(
+                fileItem = file,
+                onToggle = { onToggleFileSelection(group.groupId, file.id) }
+            )
+            if (fileIndex != group.files.lastIndex) {
+                Hairline(color = PaperTint)
+            }
+        }
+
+        Hairline()
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MonoLabel(
+                text = "Verifica 1 KB → 4 KB · ${group.fourKbBlocksChecked} blocchi",
+                color = InkFaint
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = Ink,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showTechnicalDetails = !showTechnicalDetails }
-                    .padding(top = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(PaperTint)
+                    .padding(12.dp)
             ) {
                 Text(
-                    text = "Dettagli verifica 1KB → 4KB & motivazione scelta originale",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = group.technicalVerdict,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ink
                 )
-                Icon(
-                    imageVector = if (showTechnicalDetails) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = "Espandi dettagli",
-                    tint = NeonCyanPrimary,
-                    modifier = Modifier.size(18.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "testata 1 KB  ${group.files.firstOrNull()?.first1KbHashHex.orEmpty()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-
-            AnimatedVisibility(visible = showTechnicalDetails) {
-                Surface(
-                    color = ElevatedCardSurface,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = group.technicalVerdict,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Blocco 1 KB iniziale: #${group.files.firstOrNull()?.first1KbHashHex.orEmpty()} • Passi da 4 KB verificati: ${group.fourKbBlocksChecked}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = NeonCyanPrimary
-                        )
-                    }
-                }
+                Text(
+                    text = "firma finale  ${group.signatureHex}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
 }
 
 @Composable
-private fun DuplicateFileItemRow(
+private fun DuplicateFileRow(
     fileItem: ScannedFileItem,
     onToggle: () -> Unit
 ) {
-    val isSelected = fileItem.isSelectedForDeletion
-    val borderColor = if (isSelected) {
-        CoralDanger.copy(alpha = 0.55f)
-    } else {
-        EmeraldSafe.copy(alpha = 0.65f)
-    }
-    val rowBg = if (isSelected) {
-        CoralDangerContainer.copy(alpha = 0.25f)
-    } else {
-        EmeraldSafeContainer.copy(alpha = 0.28f)
-    }
-
-    val dateFormatter = remember {
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN)
-    }
+    val selected = fileItem.isSelectedForDeletion
+    val accent = if (selected) AlertCoral else ProtectedGreen
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yy · HH:mm", Locale.ITALIAN) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(rowBg)
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onToggle() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(vertical = 11.dp, horizontal = 2.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Checkbox(
-            checked = isSelected,
-            onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(
-                checkedColor = CoralDanger,
-                uncheckedColor = EmeraldSafe
-            )
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
+        PaperCheck(checked = selected, accent = accent)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    color = if (isSelected) CoralDanger else EmeraldSafe,
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (isSelected) Icons.Default.DeleteForever else Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(11.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (isSelected) "ELIMINA COPIA" else "ORIGINALE PROTETTO",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                Text(
+                    text = fileItem.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                if (selected) {
+                    CoralTag(text = "elimina")
+                } else {
+                    PillTag(
+                        text = "originale",
+                        background = SignalLime,
+                        foreground = Ink,
+                        icon = Icons.Default.Shield
+                    )
                 }
-
-                Text(
-                    text = dateFormatter.format(Date(fileItem.lastModified)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
-                text = fileItem.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Text(
-                text = "Cartella: ${fileItem.folderPath}",
+                text = fileItem.folderPath,
                 style = MaterialTheme.typography.bodySmall,
-                color = NeonCyanPrimary,
+                color = InkMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
-            if (fileItem.originReason.isNotBlank()) {
-                Text(
-                    text = fileItem.originReason,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = buildString {
+                    append(dateFormatter.format(Date(fileItem.lastModified)))
+                    if (fileItem.originReason.isNotBlank()) {
+                        append("  ·  ")
+                        append(fileItem.originReason)
+                    }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = InkFaint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Empty state                                                        */
+/* ------------------------------------------------------------------ */
 
 @Composable
 private fun EmptyDuplicatesState(
     onAddSafFolderClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = modifier.padding(20.dp),
+        contentAlignment = Alignment.TopCenter
     ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = null,
-            tint = EmeraldSafe,
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = "Nessun duplicato in questa vista",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Tutti i file analizzati sono unici oppure puoi collegare una cartella del telefono per estendere la scansione.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(
-            onClick = onAddSafFolderClick,
-            modifier = Modifier.testTag("empty_state_add_folder_button"),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = NeonCyanPrimary,
-                contentColor = Color(0xFF00201B)
-            )
+        HyperCard(
+            shape = RoundedCornerShape(26.dp),
+            contentPadding = PaddingValues(22.dp)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Seleziona Cartella Dispositivo")
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(SignalLimeSoft),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Nessun duplicato in questa vista",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Ink
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Tutti i file confrontati hanno una firma diversa, oppure il filtro attivo sta nascondendo i gruppi trovati. Puoi estendere la ricerca collegando un'altra cartella.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = InkMuted
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            OutlinePillButton(
+                text = "Collega una cartella",
+                icon = Icons.Default.FolderZip,
+                onClick = onAddSafFolderClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("empty_state_add_folder_button")
+            )
         }
     }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dialogs                                                            */
+/* ------------------------------------------------------------------ */
+
+@Composable
+private fun ConfirmDeleteDialog(
+    count: Int,
+    bytes: Long,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = PaperSurface,
+        shape = RoundedCornerShape(26.dp),
+        title = {
+            Column {
+                MonoLabel(text = "Conferma eliminazione", color = AlertCoral)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Eliminare $count copie?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Ink
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Verranno rimossi definitivamente ${ByteFormatter.formatBytes(bytes)} di file ridondanti. Gli originali protetti restano al loro posto.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkMuted
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(AlertCoralSoft)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = AlertCoral,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Operazione non reversibile",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = AlertCoral,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            InkButton(
+                text = "Elimina",
+                containerColor = AlertCoral,
+                contentColor = Color.White,
+                onClick = onConfirm,
+                modifier = Modifier.testTag("confirm_delete_button")
+            )
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Annulla",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = InkMuted
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -629,36 +602,69 @@ private fun SelectionRuleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = PaperSurface,
+        shape = RoundedCornerShape(26.dp),
         title = {
-            Text("Criterio Automatico Scelta Originale")
+            Column {
+                MonoLabel(text = "Criterio automatico", color = VioletNote)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Quale copia proteggere?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Ink
+                )
+            }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 SelectionRule.entries.forEach { rule ->
                     val isSelected = rule == currentRule
-                    Surface(
-                        color = if (isSelected) NeonCyanPrimary.copy(alpha = 0.18f) else ElevatedCardSurface,
-                        shape = RoundedCornerShape(12.dp),
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isSelected) VioletSoft else PaperTint)
                             .border(
-                                1.dp,
-                                if (isSelected) NeonCyanPrimary else OutlineSubtle,
-                                RoundedCornerShape(12.dp)
+                                width = 1.dp,
+                                color = if (isSelected) VioletNote.copy(alpha = 0.4f) else Color.Transparent,
+                                shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { onSelectRule(rule) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .background(if (isSelected) VioletNote else PaperSurface)
+                                .border(1.dp, HairlineStrong, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
                             Text(
                                 text = rule.titleIt,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = if (isSelected) NeonCyanPrimary else MaterialTheme.colorScheme.onSurface
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Ink
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = rule.descriptionIt,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodySmall,
+                                color = InkMuted
                             )
                         }
                     }
@@ -667,7 +673,11 @@ private fun SelectionRuleDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Chiudi")
+                Text(
+                    text = "Chiudi",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Ink
+                )
             }
         }
     )

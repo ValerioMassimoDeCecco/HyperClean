@@ -2,26 +2,50 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val ObsidianBackground = Color(0xFF0B0F17)
-val GraphiteSurface = Color(0xFF131B2E)
-val GraphiteSurfaceVariant = Color(0xFF1C2742)
-val ElevatedCardSurface = Color(0xFF17223B)
+/*
+ * HyperClean — "Paper & Signal" design language
+ * ---------------------------------------------
+ * A warm paper canvas, ink-black typography, hairline rules and a single
+ * high-charge lime signal. No neon, no glow: the interface reads like a
+ * beautifully printed lab report that happens to be alive.
+ */
 
-val NeonCyanPrimary = Color(0xFF00F5D4)
-val NeonCyanContainer = Color(0xFF003B33)
-val OnNeonCyan = Color(0xFF00201B)
+// — Paper base surface
+val PaperCanvas = Color(0xFFF3EFE6)
+val PaperSurface = Color(0xFFFFFFFF)
+val PaperTint = Color(0xFFFAF7F1)
+val PaperSunken = Color(0xFFEAE4D7)
 
-val ElectricIndigoSecondary = Color(0xFF6366F1)
-val ElectricIndigoContainer = Color(0xFF1E1B4B)
-val OnElectricIndigo = Color(0xFFFFFFFF)
+// — Ink (typography & primary actions)
+val Ink = Color(0xFF14160F)
+val InkSoft = Color(0xFF2A2C24)
+val InkMuted = Color(0xFF77725F)
+val InkFaint = Color(0xFFA8A28F)
 
-val EmeraldSafe = Color(0xFF10B981)
-val EmeraldSafeContainer = Color(0xFF064E3B)
+// — Hairlines
+val Hairline = Color(0xFFE4DDCE)
+val HairlineStrong = Color(0xFFCFC6B2)
 
-val CoralDanger = Color(0xFFF43F5E)
-val CoralDangerContainer = Color(0xFF4C0519)
+// — Signal lime (the one accent that means "live / reclaimable")
+val SignalLime = Color(0xFFCBF25C)
+val SignalLimeDeep = Color(0xFFA6D62B)
+val SignalLimeSoft = Color(0xFFF1F9D6)
 
-val AmberWarning = Color(0xFFF59E0B)
-val TextPrimaryLight = Color(0xFFF8FAFC)
-val TextSecondaryMuted = Color(0xFF94A3B8)
-val OutlineSubtle = Color(0xFF2A3A5E)
+// — Protected original (success)
+val ProtectedGreen = Color(0xFF1B7A55)
+val ProtectedSoft = Color(0xFFE2F2E8)
+
+// — Destructive copies
+val AlertCoral = Color(0xFFD5432A)
+val AlertCoralDeep = Color(0xFFA62F1B)
+val AlertCoralSoft = Color(0xFFFBE6DF)
+
+// — Quiet secondary (rules, cache, metadata)
+val VioletNote = Color(0xFF3F3A8F)
+val VioletSoft = Color(0xFFECE9F8)
+
+// — Dark console surface (the only "ink block" in the app)
+val ConsoleInk = Color(0xFF15170F)
+val ConsoleInkRaised = Color(0xFF24261C)
+val ConsoleText = Color(0xFFF3EFE6)
+val ConsoleMuted = Color(0xFF9A9683)
