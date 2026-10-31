@@ -288,7 +288,7 @@ private fun BrandHeader(
                 color = Ink
             )
             MonoLabel(
-                text = "Deduplicatore · 1 KB → 4 KB",
+                text = "Verifica esatta · byte-per-byte",
                 color = InkMuted
             )
         }

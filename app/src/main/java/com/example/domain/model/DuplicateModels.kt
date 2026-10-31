@@ -50,7 +50,10 @@ enum class VerboseEventType {
     FOUR_KB_STEP,
     EARLY_EXIT_SAVED,
     DUPLICATE_JACKPOT,
-    CACHE_TURBO
+    CACHE_TURBO,
+    PROBE,
+    LINK,
+    CONFIRM
 }
 
 data class VerboseFeedLine(
@@ -152,7 +155,17 @@ data class ScanTelemetry(
     val effectiveSpeedMbPerSec: Double = 0.0,
     val blockMatrix: List<BlockCellVisual> = defaultBlockMatrix(),
     val verboseFeed: List<VerboseFeedLine> = emptyList(),
-    val stageLogs: List<StageStepLog> = emptyList()
+    val stageLogs: List<StageStepLog> = emptyList(),
+    /** Set di hardlink riconosciuti come unico file fisico (esclusi dalle copie). */
+    val hardlinkSetsExcluded: Int = 0,
+    /** Firme di sonda (3 × 4 KB, SHA-256) calcolate in questa scansione. */
+    val probeSignaturesChecked: Int = 0,
+    /** File che hanno superato la sonda con almeno un gemello. */
+    val probeMatchesCount: Int = 0,
+    /** File confermati tramite confronto diretto byte-per-byte. */
+    val byteCompareVerifiedFiles: Int = 0,
+    /** Collisioni di sonda respinte dal confronto diretto (falsi positivi evitati). */
+    val rejectedProbeCollisions: Int = 0
 )
 
 fun defaultBlockMatrix(): List<BlockCellVisual> {
